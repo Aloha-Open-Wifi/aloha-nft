@@ -4,6 +4,7 @@
 
 ## Ethereum Mainnet 
 Staking: 0xA1784F009d990D9b33fac0F5461cAc9bCB21D827 
+
 NFT: 0x9aD18b012bf83E3b0ccAbcFa3d74A9BfB6889c77
 
 # State of the art
