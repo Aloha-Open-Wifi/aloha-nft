@@ -1,4 +1,4 @@
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 interface IAlohaNFT {
     function awardItem(
@@ -7,4 +7,9 @@ interface IAlohaNFT {
         uint256 tokenRarity,
         uint256 tokenBackground
     ) external returns (uint256);
+
+    function transferFrom(address from, address to, uint256 tokenId) external;
+    function tokenRarity(uint256 tokenId) external returns (uint256);
+    function tokenImage(uint256 tokenId) external returns (uint256);
+    function tokenBackground(uint256 tokenId) external returns (uint256);
 }

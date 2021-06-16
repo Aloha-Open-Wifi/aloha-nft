@@ -1,4 +1,4 @@
-pragma solidity 0.6.5;
+pragma solidity 0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
@@ -76,6 +76,10 @@ contract AlohaStaking is Ownable, ReentrancyGuard {
     mapping (uint256 => uint256[]) public rarityByImages;
     // rarity => totalImages
     mapping (uint256 => uint256) public rarityByImagesTotal;
+    // image => rarity => limit
+    mapping (uint256 => mapping(uint256 => uint256)) public limitByRarityAndImage;
+    // image => rarity => totalTokens
+    mapping (uint256 => mapping(uint256 => uint256)) public totalTokensByRarityAndImage;
     // erc20Address => rarity => Pool
     mapping (address => mapping(uint256 => Pool)) public poolsMap;
     // userAddress => erc20Address => rarity => Stake 
@@ -173,7 +177,7 @@ contract AlohaStaking is Ownable, ReentrancyGuard {
         poolExists(_erc20Token, _tokenRarity)
         addressNotInStake(msg.sender, _erc20Token, _tokenRarity)
     {
-        uint256 randomImage = rarityByImages[_tokenRarity][_randomA(rarityByImagesTotal[_tokenRarity]) - 1];
+        uint256 randomImage = _getRandomImage(_tokenRarity);
         uint256 _endDate = _getTime() + poolsMap[_erc20Token][_tokenRarity].duration;
         uint256 randomBackground = _randomB(backgrounds);
 
@@ -263,7 +267,7 @@ contract AlohaStaking is Ownable, ReentrancyGuard {
     /**
     * @dev Returns how many fees we collected from withdraws of one token.
     */
-    function getAcumulatedFees(address _erc20Token) public returns (uint256) {
+    function getAcumulatedFees(address _erc20Token) public view returns (uint256) {
         uint256 balance = IERC20(_erc20Token).balanceOf(address(this));
 
         if (balance > 0) {
@@ -301,7 +305,8 @@ contract AlohaStaking is Ownable, ReentrancyGuard {
     */
     function createReward(
         uint256 _tokenImage,
-        uint256 _tokenRarity
+        uint256 _tokenRarity,
+        uint256 _limit
     )
         public
         onlyOwner()
@@ -311,6 +316,7 @@ contract AlohaStaking is Ownable, ReentrancyGuard {
         rewardsMap[_tokenImage] = _tokenRarity;
         rarityByImages[_tokenRarity].push(_tokenImage);
         rarityByImagesTotal[_tokenRarity] += 1;
+        limitByRarityAndImage[_tokenImage][_tokenRarity] = _limit;
     }
 
     /**
@@ -504,11 +510,13 @@ contract AlohaStaking is Ownable, ReentrancyGuard {
         }
 
         uint256 tokenId = 0;
+        uint256 image = stakingsMap[msg.sender][_erc20Token][_tokenRarity].tokenImage;
         if (claimReward) {
-            uint256 image = stakingsMap[msg.sender][_erc20Token][_tokenRarity].tokenImage;
-            uint256 brackground = stakingsMap[msg.sender][_erc20Token][_tokenRarity].tokenBackground;
+            uint256 background = stakingsMap[msg.sender][_erc20Token][_tokenRarity].tokenBackground;
 
-            tokenId = IAlohaNFT(alohaERC721).awardItem(msg.sender, image, _tokenRarity, brackground);
+            tokenId = IAlohaNFT(alohaERC721).awardItem(msg.sender, _tokenRarity, image, background);
+        } else {
+            totalTokensByRarityAndImage[image][_tokenRarity] -= 1;
         }
 
         emit Withdrawal(
@@ -524,6 +532,29 @@ contract AlohaStaking is Ownable, ReentrancyGuard {
         );
 
         _clearStake(msg.sender, _erc20Token, _tokenRarity);
+    }
+
+    function _getRandomImage(uint256 _rarity) internal returns (uint256) {
+        uint256 selectedImage = rarityByImages[_rarity][_randomA(rarityByImagesTotal[_rarity]) - 1];
+
+        if (limitByRarityAndImage[selectedImage][_rarity] == 0 || 
+            totalTokensByRarityAndImage[selectedImage][_rarity] < limitByRarityAndImage[selectedImage][_rarity]
+        ) {
+            totalTokensByRarityAndImage[selectedImage][_rarity] += 1;
+            return selectedImage;
+        }
+
+        for (uint256 index = 1; index <= rarityByImagesTotal[_rarity]; index++) {
+            selectedImage = rarityByImages[_rarity][index - 1];
+            if (limitByRarityAndImage[selectedImage][_rarity] == 0 ||
+                totalTokensByRarityAndImage[selectedImage][_rarity] < limitByRarityAndImage[selectedImage][_rarity]
+            ) {
+                totalTokensByRarityAndImage[selectedImage][_rarity] += 1;
+                return selectedImage;
+            }
+        }
+
+        revert("AlohaStaking: All images has reached the limit");
     }
 
     /**
