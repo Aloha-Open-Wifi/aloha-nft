@@ -3,9 +3,14 @@
 # Addresses 
 
 ## Ethereum Mainnet 
-Staking: 0xA1784F009d990D9b33fac0F5461cAc9bCB21D827 
+Staking: 0xacd8be8bce66d34ac2bf215df5655a192e992d7e 
 
-NFT: 0x9aD18b012bf83E3b0ccAbcFa3d74A9BfB6889c77
+NFT: 0x524833d8b9C2194Ead830Fd205E8fAEd9801E776
+
+## Polygon Mainnet
+Staking: 0xd293522F73feA71dC1e52e16c01aAF3EEDE72e88
+
+NFT: 0x75e93aC621B38ae11E5c95A383a37Ce8d657b19E
 
 # State of the art
 
