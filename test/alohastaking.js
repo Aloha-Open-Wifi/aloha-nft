@@ -1,4 +1,4 @@
-const { expectRevert, expectEvent, BN } = require('@openzeppelin/test-helpers');
+const { expectRevert, expectEvent, BN, time } = require('@openzeppelin/test-helpers');
 const truffleAssert = require('truffle-assertions');
 const { expect } = require('chai');
 
@@ -11,7 +11,7 @@ contract('AlohaStaking', function (accounts) {
 
   beforeEach(async function () {
     this.alohaMock = await AlohaMock.new({ from: accounts[0] });
-    this.alohaNFTMock = await AlohaNFTMock.new('Aloha NFT', 'ANFT', 'https://aloha.com/nft/', { from: accounts[0] });
+    this.alohaNFTMock = await AlohaNFTMock.new('0x94D6A6032400e99639dD72612045402247d72436', { from: accounts[0] });
     this.tokenMock = await TokenMock.new({ from: accounts[0] });
     this.tokenMockZ = await TokenMock.new({ from: accounts[0] });
     this.fee = 1000; // 10%
@@ -24,7 +24,8 @@ contract('AlohaStaking', function (accounts) {
       { from: accounts[0] }
     );
 
-    await this.alohaNFTMock.transferOwnership(
+    await this.alohaNFTMock.grantRole(
+      "0xf0887ba65ee2024ea881d91b74c2450ef19e1557f03bed3ea9f16b037cbe2dc9",
       this.alohastaking.address,
       { from: accounts[0] }
     );
@@ -117,7 +118,7 @@ contract('AlohaStaking', function (accounts) {
     it('with image 1 and rarity 2', async function() {
       const image = 1;
       const rarity = 2;
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
 
       assert.equal(
         await this.alohastaking.rewardsMap.call(image),
@@ -139,20 +140,20 @@ contract('AlohaStaking', function (accounts) {
     });
 
     it('with image 2 and rarity 3', async function() {
-      await this.alohastaking.createReward(2, 3, { from: accounts[0] });
+      await this.alohastaking.createReward(2, 3, 0, { from: accounts[0] });
     });
 
     it('with image 4 and rarity 4 must fails', async function() {
       await expectRevert(
-        this.alohastaking.createReward(4, 4, { from: accounts[0] }),
+        this.alohastaking.createReward(4, 4, 0, { from: accounts[0] }),
         'AlohaStaking: Rarity must be 1, 2 or 3'
       );
     });
 
     it('with repeated image 2 must fails', async function() {
-      await this.alohastaking.createReward(2, 2, { from: accounts[0] });
+      await this.alohastaking.createReward(2, 2, 0, { from: accounts[0] });
       await expectRevert(
-        this.alohastaking.createReward(2, 1, { from: accounts[0] }),
+        this.alohastaking.createReward(2, 1, 0, { from: accounts[0] }),
         'AlohaStaking: Image for reward already exists'
       );
     });
@@ -179,7 +180,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 86400;   // 1 day
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -216,7 +217,7 @@ contract('AlohaStaking', function (accounts) {
       alohaAmount = 5000;
       duration = 86400*2; // 2 days
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
 
       await this.alohastaking.setSimplePool(
         alohaAmount,
@@ -251,7 +252,7 @@ contract('AlohaStaking', function (accounts) {
     });
 
     it('with existing rarity', async function() {
-      await this.alohastaking.createReward(1, 1, { from: accounts[0] });
+      await this.alohastaking.createReward(1, 1, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         new BN("100000000000000000000"),  // 100^18
         86400,  // 1 day
@@ -299,7 +300,7 @@ contract('AlohaStaking', function (accounts) {
       let erc20Amount = 2000;
       let duration = 86400;   // 1 day
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setPairPool(
         alohaAmount,
         this.tokenMock.address,
@@ -339,7 +340,7 @@ contract('AlohaStaking', function (accounts) {
       erc20Amount = 5000;
       duration = 86400*2;   // 2 day
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setPairPool(
         alohaAmount,
         this.tokenMock.address,
@@ -375,7 +376,7 @@ contract('AlohaStaking', function (accounts) {
     });
 
     it('with existing rarity works', async function() {
-      await this.alohastaking.createReward(1, 1, { from: accounts[0] });
+      await this.alohastaking.createReward(1, 1, 0, { from: accounts[0] });
       await this.alohastaking.setPairPool(
         new BN("100000000000000000000"),  // 100^18
         this.tokenMock.address,
@@ -406,7 +407,7 @@ contract('AlohaStaking', function (accounts) {
       let image = 1;
       let rarity = 2;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
 
       await expectRevert(
         this.alohastaking.simpleStake(
@@ -423,7 +424,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 86400;   // 1 day
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -443,7 +444,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 86400;   // 1 day
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -486,7 +487,7 @@ contract('AlohaStaking', function (accounts) {
       let image = 1;
       let rarity = 2;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
 
       await expectRevert(
         this.alohastaking.pairStake(
@@ -505,7 +506,7 @@ contract('AlohaStaking', function (accounts) {
       let erc20Amount = 2000;
       let duration = 86400;   // 1 day
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setPairPool(
         alohaAmount,
         this.tokenMock.address,
@@ -544,7 +545,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 86400;   // 1 day
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -572,7 +573,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 1;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -605,7 +606,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 1;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -653,7 +654,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 1;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -691,7 +692,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 1;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -727,7 +728,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 1;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -781,314 +782,398 @@ contract('AlohaStaking', function (accounts) {
 
   });
 
-    describe('pairWithdraw', function () {
+  describe('pairWithdraw', function () {
 
-      it('with not address in stake must fails', async function() {
-        let rarity = 1;
+    it('with not address in stake must fails', async function() {
+      let rarity = 1;
 
-        await expectRevert(
-          this.alohastaking.pairWithdraw(
-            this.tokenMockZ.address,
-            rarity,
-            { from: accounts[1] }
-          ),
-          'AlohaStaking: Address not stakes in this pool'
-        );
+      await expectRevert(
+        this.alohastaking.pairWithdraw(
+          this.tokenMockZ.address,
+          rarity,
+          { from: accounts[1] }
+        ),
+        'AlohaStaking: Address not stakes in this pool'
+      );
+    });
+
+    it('with not ended stake must fails', async function() {
+      let image = 1;
+      let rarity = 2;
+      let alohaAmount = 3000;
+      let erc20Amount = 4000;
+      let duration = 86400;   // 1 day
+
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
+      await this.alohastaking.setPairPool(
+        alohaAmount,
+        this.tokenMockZ.address,
+        erc20Amount,
+        duration,
+        rarity,
+        { from: accounts[0] }
+      );
+
+      await this.alohastaking.pairStake(
+        this.tokenMockZ.address,
+        rarity,
+        { from: accounts[1] }
+      );
+
+      await expectRevert(
+        this.alohastaking.pairWithdraw(
+          this.tokenMockZ.address,
+          rarity,
+          { from: accounts[1] }
+        ),
+        'AlohaStaking: Stake duration has not ended yet'
+      );
+    });
+
+    it('emits event Withdrawal', async function() {
+      let image = 1;
+      let rarity = 2;
+      let alohaAmount = 3000;
+      let erc20Amount = 4000;
+      let duration = 1;
+
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
+      await this.alohastaking.setPairPool(
+        alohaAmount,
+        this.tokenMockZ.address,
+        erc20Amount,
+        duration,
+        rarity,
+        { from: accounts[0] }
+      );
+
+      await this.alohastaking.pairStake(
+        this.tokenMockZ.address,
+        rarity,
+        { from: accounts[1] }
+      );
+
+      async function timeout(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      await timeout(2000);
+
+      const result = await this.alohastaking.pairWithdraw(
+        this.tokenMockZ.address,
+        rarity,
+        { from: accounts[1] }
+      );
+
+      truffleAssert.eventEmitted(result, 'Withdrawal');
+    });
+
+    it('token balances changes', async function() {
+      let image = 1;
+      let rarity = 2;
+      let alohaAmount = 3000;
+      let erc20Amount = 4000;
+      let duration = 1;
+
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
+      await this.alohastaking.setPairPool(
+        alohaAmount,
+        this.tokenMockZ.address,
+        erc20Amount,
+        duration,
+        rarity,
+        { from: accounts[0] }
+      );
+
+      const alohaBalanceBeforeWithdrawal = await this.alohaMock.balanceOf(accounts[1]);
+      const erc20BalanceBeforeWithdrawal = await this.tokenMockZ.balanceOf(accounts[1]);
+
+      await this.alohastaking.pairStake(
+        this.tokenMockZ.address,
+        rarity,
+        { from: accounts[1] }
+      );
+
+      async function timeout(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+      await timeout(2000);
+
+      const alohaBalanceWhileStaking = await this.alohaMock.balanceOf(accounts[1]);
+      const erc20BalanceWhileStaking = await this.tokenMockZ.balanceOf(accounts[1]);
+
+      assert.equal(
+        alohaBalanceWhileStaking.toString(),
+        (alohaBalanceBeforeWithdrawal - alohaAmount).toString(),
+        'Stake Aloha balance has not been transferred'
+      );
+
+      assert.equal(
+        erc20BalanceWhileStaking.toString(),
+        (erc20BalanceBeforeWithdrawal - erc20Amount).toString(),
+        'Stake ERC20 balance has not been transferred'
+      );
+
+      await this.alohastaking.pairWithdraw(
+        this.tokenMockZ.address,
+        rarity,
+        { from: accounts[1] }
+      );
+
+      const alohaBalanceAfterWithdrawal = await this.alohaMock.balanceOf(accounts[1]);
+      const erc20BalanceAfterWithdrawal = await this.tokenMockZ.balanceOf(accounts[1]);
+
+      assert.equal(
+        alohaBalanceAfterWithdrawal.toString(),
+        sumStrings(alohaBalanceWhileStaking, alohaAmount - (alohaAmount * (this.fee /10000))),
+        'Withdrawal Aloha balance has not been transfefred'
+      );
+      assert.equal(
+        erc20BalanceAfterWithdrawal.toString(),
+        sumStrings(erc20BalanceWhileStaking, erc20Amount - (erc20Amount * (this.fee /10000))),
+        'Withdrawal ERC20 balance has not been transfefred'
+      );
+    });
+
+    it('token NFT received', async function() {
+      let image = 1;
+      let rarity = 2;
+      let alohaAmount = 3000;
+      let erc20Amount = 4000;
+      let duration = 1;
+
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
+      await this.alohastaking.setPairPool(
+        alohaAmount,
+        this.tokenMockZ.address,
+        erc20Amount,
+        duration,
+        rarity,
+        { from: accounts[0] }
+      );
+
+      await this.alohastaking.pairStake(
+        this.tokenMockZ.address,
+        rarity,
+        { from: accounts[1] }
+      );
+
+      async function timeout(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+      await timeout(2000);
+
+      await this.alohastaking.pairWithdraw(
+        this.tokenMockZ.address,
+        rarity,
+        { from: accounts[1] }
+      );
+
+      const alohaNFT = await this.alohaNFTMock.balanceOf(accounts[1]);
+
+      assert.equal(
+        alohaNFT.toString(),
+        1,
+        'AlohaNFT has not been transferred'
+      );
+    });
+
+    it('applies fees', async function() {
+      let image = 1;
+      let rarity = 2;
+      let alohaAmount = 3000;
+      let erc20Amount = 4000;
+      let duration = 1;
+
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
+      await this.alohastaking.setPairPool(
+        alohaAmount,
+        this.tokenMockZ.address,
+        erc20Amount,
+        duration,
+        rarity,
+        { from: accounts[0] }
+      );
+
+      await this.alohastaking.pairStake(
+        this.tokenMockZ.address,
+        rarity,
+        { from: accounts[1] }
+      );
+
+      async function timeout(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      await timeout(2000);
+
+      const result = await this.alohastaking.pairWithdraw(
+        this.tokenMockZ.address,
+        rarity,
+        { from: accounts[1] }
+      );
+
+      truffleAssert.eventEmitted(result, 'Withdrawal', (event) => {
+        return event.originalAlohaAmount.valueOf() == alohaAmount
+            && event.receivedAlohaAmount.valueOf() == alohaAmount - (alohaAmount * (this.fee /10000))
+            && event.originalErc20Amount.valueOf() == erc20Amount
+            && event.receivedErc20Amount.valueOf() == erc20Amount - (erc20Amount * (this.fee /10000));
       });
+    });
 
-      it('with not ended stake must fails', async function() {
-        let image = 1;
-        let rarity = 2;
-        let alohaAmount = 3000;
-        let erc20Amount = 4000;
-        let duration = 86400;   // 1 day
+    it('stake cleared', async function() {
+      let image = 1;
+      let rarity = 2;
+      let alohaAmount = 3000;
+      let erc20Amount = 4000;
+      let duration = 1;
 
-        await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
-        await this.alohastaking.setPairPool(
-          alohaAmount,
-          this.tokenMockZ.address,
-          erc20Amount,
-          duration,
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
+      await this.alohastaking.setPairPool(
+        alohaAmount,
+        this.tokenMockZ.address,
+        erc20Amount,
+        duration,
+        rarity,
+        { from: accounts[0] }
+      );
+
+      await this.alohastaking.pairStake(
+        this.tokenMockZ.address,
+        rarity,
+        { from: accounts[1] }
+      );
+
+      async function timeout(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      await timeout(2000);
+
+      await this.alohastaking.pairWithdraw(
+        this.tokenMockZ.address,
+        rarity,
+        { from: accounts[1] }
+      );
+
+      let pool = await this.alohastaking.stakingsMap.call(
+        accounts[1],
+        this.tokenMockZ.address,
+        rarity
+      ).valueOf();
+
+      assert.equal(
+        pool.endDate,
+        0,
+        'satakingMap endDate not cleared'
+      );
+      assert.equal(
+        pool.tokenImage,
+        0,
+        'satakingMap tokenImage not cleared'
+      );
+      assert.equal(
+        pool.tokenBackground,
+        0,
+        'satakingMap tokenBackground not cleared'
+      );
+      assert.equal(
+        pool.alohaAmount,
+        0,
+        'satakingMap alohaAmount not cleared'
+      );
+      assert.equal(
+        pool.erc20Amount,
+        0,
+        'satakingMap erc20Amount not cleared'
+      );
+    });
+
+  });
+
+  describe('simpleStake with image limits', function () {
+
+    it('when limit reached fails', async function() {
+      let image = 1;
+      let rarity = 2;
+      let alohaAmount = 1000;
+      let duration = 86400;   // 1 day
+
+      await this.alohastaking.createReward(image, rarity, 1, { from: accounts[0] });
+      await this.alohastaking.setSimplePool(
+        alohaAmount,
+        duration,
+        rarity,
+        { from: accounts[0] }
+      );
+
+      await this.alohastaking.simpleStake(
+        rarity,
+        { from: accounts[1] }
+      );
+
+      await expectRevert(
+        this.alohastaking.simpleStake(
           rarity,
-          { from: accounts[0] }
-        );
+          { from: accounts[2] }
+        ),
+        'AlohaStaking: All images has reached the limit'
+      );
+    });
 
-        await this.alohastaking.pairStake(
-          this.tokenMockZ.address,
-          rarity,
-          { from: accounts[1] }
-        );
+    it('when limit reached assigns another image', async function() {
+      let imageOne = 1;
+      let imageTwo = 2;
+      let rarity = 2;
+      let alohaAmount = 1000;
+      let duration = 86400;   // 1 day
 
-        await expectRevert(
-          this.alohastaking.pairWithdraw(
-            this.tokenMockZ.address,
-            rarity,
-            { from: accounts[1] }
-          ),
-          'AlohaStaking: Stake duration has not ended yet'
-        );
-      });
+      await this.alohastaking.createReward(imageOne, rarity, 1, { from: accounts[0] });
+      await this.alohastaking.createReward(imageTwo, rarity, 1, { from: accounts[0] });
+      await this.alohastaking.setSimplePool(
+        alohaAmount,
+        duration,
+        rarity,
+        { from: accounts[0] }
+      );
 
-      it('emits event Withdrawal', async function() {
-        let image = 1;
-        let rarity = 2;
-        let alohaAmount = 3000;
-        let erc20Amount = 4000;
-        let duration = 1;
+      await this.alohastaking.simpleStake(
+        rarity,
+        { from: accounts[1] }
+      );
 
-        await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
-        await this.alohastaking.setPairPool(
-          alohaAmount,
-          this.tokenMockZ.address,
-          erc20Amount,
-          duration,
-          rarity,
-          { from: accounts[0] }
-        );
+      let pool;
+      pool = await this.alohastaking.stakingsMap.call(accounts[1], this.alohaMock.address, rarity).valueOf();
+      const poolImageOne = pool.tokenImage;
 
-        await this.alohastaking.pairStake(
-          this.tokenMockZ.address,
-          rarity,
-          { from: accounts[1] }
-        );
+      await time.increase(time.duration.days(2));
 
-        async function timeout(ms) {
-          return new Promise(resolve => setTimeout(resolve, ms));
-        }
+      await this.alohastaking.simpleWithdraw(
+        rarity,
+        { from: accounts[1] }
+      );
 
-        await timeout(2000);
+      await this.alohastaking.simpleStake(
+        rarity,
+        { from: accounts[1] }
+      );
 
-        const result = await this.alohastaking.pairWithdraw(
-          this.tokenMockZ.address,
-          rarity,
-          { from: accounts[1] }
-        );
+      pool = await this.alohastaking.stakingsMap.call(accounts[1], this.alohaMock.address, rarity).valueOf();
+      const poolImageTwo = pool.tokenImage;
 
-        truffleAssert.eventEmitted(result, 'Withdrawal');
-      });
-
-      it('token balances changes', async function() {
-        let image = 1;
-        let rarity = 2;
-        let alohaAmount = 3000;
-        let erc20Amount = 4000;
-        let duration = 1;
-
-        await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
-        await this.alohastaking.setPairPool(
-          alohaAmount,
-          this.tokenMockZ.address,
-          erc20Amount,
-          duration,
-          rarity,
-          { from: accounts[0] }
-        );
-
-        const alohaBalanceBeforeWithdrawal = await this.alohaMock.balanceOf(accounts[1]);
-        const erc20BalanceBeforeWithdrawal = await this.tokenMockZ.balanceOf(accounts[1]);
-
-        await this.alohastaking.pairStake(
-          this.tokenMockZ.address,
-          rarity,
-          { from: accounts[1] }
-        );
-
-        async function timeout(ms) {
-          return new Promise(resolve => setTimeout(resolve, ms));
-        }
-        await timeout(2000);
-
-        const alohaBalanceWhileStaking = await this.alohaMock.balanceOf(accounts[1]);
-        const erc20BalanceWhileStaking = await this.tokenMockZ.balanceOf(accounts[1]);
-
+      if ( (poolImageOne == 1 && poolImageTwo == 2) || (poolImageOne == 2 && poolImageTwo == 1) ) {
+        // OK
+      } else {
         assert.equal(
-          alohaBalanceWhileStaking.toString(),
-          (alohaBalanceBeforeWithdrawal - alohaAmount).toString(),
-          'Stake Aloha balance has not been transferred'
+          true,
+          true,
+          'Not assigns another image'
         );
-
-        assert.equal(
-          erc20BalanceWhileStaking.toString(),
-          (erc20BalanceBeforeWithdrawal - erc20Amount).toString(),
-          'Stake ERC20 balance has not been transferred'
-        );
-
-        await this.alohastaking.pairWithdraw(
-          this.tokenMockZ.address,
-          rarity,
-          { from: accounts[1] }
-        );
-
-        const alohaBalanceAfterWithdrawal = await this.alohaMock.balanceOf(accounts[1]);
-        const erc20BalanceAfterWithdrawal = await this.tokenMockZ.balanceOf(accounts[1]);
-
-        assert.equal(
-          alohaBalanceAfterWithdrawal.toString(),
-          sumStrings(alohaBalanceWhileStaking, alohaAmount - (alohaAmount * (this.fee /10000))),
-          'Withdrawal Aloha balance has not been transfefred'
-        );
-        assert.equal(
-          erc20BalanceAfterWithdrawal.toString(),
-          sumStrings(erc20BalanceWhileStaking, erc20Amount - (erc20Amount * (this.fee /10000))),
-          'Withdrawal ERC20 balance has not been transfefred'
-        );
-      });
-
-      it('token NFT received', async function() {
-        let image = 1;
-        let rarity = 2;
-        let alohaAmount = 3000;
-        let erc20Amount = 4000;
-        let duration = 1;
-
-        await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
-        await this.alohastaking.setPairPool(
-          alohaAmount,
-          this.tokenMockZ.address,
-          erc20Amount,
-          duration,
-          rarity,
-          { from: accounts[0] }
-        );
-
-        await this.alohastaking.pairStake(
-          this.tokenMockZ.address,
-          rarity,
-          { from: accounts[1] }
-        );
-
-        async function timeout(ms) {
-          return new Promise(resolve => setTimeout(resolve, ms));
-        }
-        await timeout(2000);
-
-        await this.alohastaking.pairWithdraw(
-          this.tokenMockZ.address,
-          rarity,
-          { from: accounts[1] }
-        );
-
-        const alohaNFT = await this.alohaNFTMock.balanceOf(accounts[1]);
-
-        assert.equal(
-          alohaNFT.toString(),
-          1,
-          'AlohaNFT has not been transferred'
-        );
-      });
-
-      it('applies fees', async function() {
-        let image = 1;
-        let rarity = 2;
-        let alohaAmount = 3000;
-        let erc20Amount = 4000;
-        let duration = 1;
-
-        await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
-        await this.alohastaking.setPairPool(
-          alohaAmount,
-          this.tokenMockZ.address,
-          erc20Amount,
-          duration,
-          rarity,
-          { from: accounts[0] }
-        );
-
-        await this.alohastaking.pairStake(
-          this.tokenMockZ.address,
-          rarity,
-          { from: accounts[1] }
-        );
-
-        async function timeout(ms) {
-          return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
-        await timeout(2000);
-
-        const result = await this.alohastaking.pairWithdraw(
-          this.tokenMockZ.address,
-          rarity,
-          { from: accounts[1] }
-        );
-
-        truffleAssert.eventEmitted(result, 'Withdrawal', (event) => {
-          return event.originalAlohaAmount.valueOf() == alohaAmount
-              && event.receivedAlohaAmount.valueOf() == alohaAmount - (alohaAmount * (this.fee /10000))
-              && event.originalErc20Amount.valueOf() == erc20Amount
-              && event.receivedErc20Amount.valueOf() == erc20Amount - (erc20Amount * (this.fee /10000));
-        });
-      });
-
-      it('stake cleared', async function() {
-        let image = 1;
-        let rarity = 2;
-        let alohaAmount = 3000;
-        let erc20Amount = 4000;
-        let duration = 1;
-
-        await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
-        await this.alohastaking.setPairPool(
-          alohaAmount,
-          this.tokenMockZ.address,
-          erc20Amount,
-          duration,
-          rarity,
-          { from: accounts[0] }
-        );
-
-        await this.alohastaking.pairStake(
-          this.tokenMockZ.address,
-          rarity,
-          { from: accounts[1] }
-        );
-
-        async function timeout(ms) {
-          return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
-        await timeout(2000);
-
-        await this.alohastaking.pairWithdraw(
-          this.tokenMockZ.address,
-          rarity,
-          { from: accounts[1] }
-        );
-
-        let pool = await this.alohastaking.stakingsMap.call(
-          accounts[1],
-          this.tokenMockZ.address,
-          rarity
-        ).valueOf();
-
-        assert.equal(
-          pool.endDate,
-          0,
-          'satakingMap endDate not cleared'
-        );
-        assert.equal(
-          pool.tokenImage,
-          0,
-          'satakingMap tokenImage not cleared'
-        );
-        assert.equal(
-          pool.tokenBackground,
-          0,
-          'satakingMap tokenBackground not cleared'
-        );
-        assert.equal(
-          pool.alohaAmount,
-          0,
-          'satakingMap alohaAmount not cleared'
-        );
-        assert.equal(
-          pool.erc20Amount,
-          0,
-          'satakingMap erc20Amount not cleared'
-        );
-      });
+      }
 
     });
+
+  });
 
   describe('forceSimpleWithdraw', function () {
 
@@ -1110,7 +1195,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 86400;   // 1 day
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -1137,7 +1222,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 1;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -1170,7 +1255,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 1;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -1206,7 +1291,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 1;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -1245,7 +1330,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 1;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -1400,7 +1485,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 1;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -1432,7 +1517,7 @@ contract('AlohaStaking', function (accounts) {
       let alohaAmount = 1000;
       let duration = 1;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
@@ -1480,7 +1565,7 @@ contract('AlohaStaking', function (accounts) {
       let percentage2 = 25;
       let percentage3 = 25;
 
-      await this.alohastaking.createReward(image, rarity, { from: accounts[0] });
+      await this.alohastaking.createReward(image, rarity, 0, { from: accounts[0] });
       await this.alohastaking.setSimplePool(
         alohaAmount,
         duration,
